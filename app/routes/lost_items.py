@@ -79,9 +79,17 @@ def update_lost_item(id):
     item = LostItem.query.get_or_404(id)
     data = request.get_json()
     data.pop('updater_username', None)
+
+    # 如果 item_type 发生变化，重新生成 id 和 type_id
+    if data.get('item_type') and data['item_type'] != item.item_type:
+        new_id, new_type_id = LostItem.generate_new_id(data['item_type'])
+        data['id'] = new_id
+        data['type_id'] = new_type_id
+
     for key, value in data.items():
         if key not in ['updated_at', 'updated_by']:
             setattr(item, key, value)
+
     item.updated_by = get_jwt_identity()
     item.updated_at = get_current_time()
     db.session.commit()
